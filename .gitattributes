@@ -1,0 +1,2 @@
+*.gml filter=lfs diff=lfs merge=lfs -text
+*.json;*.xml;*.csv filter=lfs diff=lfs merge=lfs -text

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KCitychatBot</title>
+    <link rel="stylesheet" href="/frontend/styles.css" />
+</head>
+
+<body>
+
+    <div class="chat-container">
+        <div class="chat-history" id="chatHistory">
+            <div class="system-info">
+                <p>KCitychatBot: a knowlegde graph-based chatbot system</p>
+            </div>
+            {% for message in chat_history %}
+            <div class="{{ 'user-message' if message.role == 'user' else 'bot-message' }}">
+                <span class="sender">{{ 'User:' if message.role == 'user' else 'Assistant:' }}</span>
+                <span class="text">{{ message.content }}</span>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- 输入框的提示信息 -->
+        <div class="chat-input">
+            <input type="text" id="userInput" placeholder="Please input your questions..." />
+            <button onclick="sendMessage()">Send</button>
+        </div>
+
+        <div class="controls">
+            <button class="custom-button">Connect</button>
+            <button class="custom-button">Upload files</button>
+        </div>
+
+    </div>
+
+    <script>
+        const chatHistory = document.getElementById('chatHistory');
+        const userInput = document.getElementById('userInput');
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (message) {
+                const userDiv = document.createElement('div');
+                userDiv.classList.add('user-message');
+                userDiv.innerHTML = `<span class="sender">User:</span> <span class="text">${message}</span>`;
+                chatHistory.appendChild(userDiv);
+                userInput.value = '';
+                scrollToBottom();
+
+                try {
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `user_input=${encodeURIComponent(message)}`,
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        const botResponse = data.response;
+                        const botDiv = document.createElement('div');
+                        botDiv.classList.add('bot-message');
+                        botDiv.innerHTML = `<span class="sender">Assistant:</span> <span class="text">${botResponse}</span>`;
+                        chatHistory.appendChild(botDiv);
+                        scrollToBottom();
+                    } else {
+                        throw new Error('服务器错误');
+                    }
+                } catch (error) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.classList.add('bot-message');
+                    errorDiv.innerHTML = `<span class="sender">Assistant:</span> <span class="text">发送失败，请稍后再试。</span>`;
+                    chatHistory.appendChild(errorDiv);
+                    scrollToBottom();
+                }
+            }
+        }
+
+        function scrollToBottom() {
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        window.onload = scrollToBottom;
+
+        userInput.addEventListener('keypress', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+
+</html>
