@@ -12,6 +12,8 @@ CityGML has been extensively studied due to its widespread use across various do
 [<u>DeepSeek API</u>](https://platform.deepseek.com/sign_in) and [<u>OpenAI API</u>](https://platform.openai.com/settings/organization/api-keys) are required, DeepSeek API is used to chat and analysis, while OpenAI API is for embedding models and evaluation. Furthermore, you need to apply for the [<u>Neo4j</u>](https://neo4j.com/download/) database(free), and download a plugin [<u>APOC</u>](https://github.com/neo4j/apoc).
 To install the complete requiring packages, use the following command at the root directory of the repository:   
 
-<pre> \`\`\`bash pip install -r requirements.txt \`\`\` </pre>
+```
+pip install -r requirements.txt
+```
 
 
