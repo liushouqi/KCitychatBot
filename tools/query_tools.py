@@ -37,6 +37,6 @@ class QueryTool(BaseTool):
 # 测试代码
 if __name__ == "__main__":
     query = "MATCH p=(b:Bridge) WHERE b.`gml:id` = 'brid_d25793e6-d162-4277-9c44-9db12e841d9a' RETURN b"
-    my_query = QueryTool(url = "bolt://localhost:7687", user = "neo4j", password = "lsq13733004201", dbName="liu", cypher_query=query)
+    my_query = QueryTool(url = "bolt://localhost:7687", user = "neo4j", password = "your password", dbName="liu", cypher_query=query)
     result = my_query._run()
     print(result)

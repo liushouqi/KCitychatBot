@@ -81,12 +81,12 @@ class ChatFlow:
 
 if __name__ == "__main__":
     chat_flow = ChatFlow()  # 机器人实例，保持对话上下文
-    df = pd.read_excel('评价表.xlsx')
+    df = pd.read_excel('evaluation_tables.xlsx')
     # 循环读取input，然后输出response、context
     for i in range(df.shape[0]):
         user_input = df.loc[i, 'input']
         context, response = chat_flow.process_inputs(user_input)
         # 写入系统输出
-        chat_flow.write_to_excel('评价表.xlsx', 'Sheet1', response, i + 2, 4)
+        chat_flow.write_to_excel('evaluation_tables.xlsx', 'Sheet1', response, i + 2, 4)
         # 写入上下文
-        chat_flow.write_to_excel('评价表.xlsx', 'Sheet1', context, i + 2, 5)
+        chat_flow.write_to_excel('evaluation_tables.xlsx', 'Sheet1', context, i + 2, 5)

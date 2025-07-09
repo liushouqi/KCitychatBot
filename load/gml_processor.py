@@ -1,15 +1,23 @@
+# gml_processor.py
 import os
 from lxml import etree
 import math
 import re
 import time
-from typing import List, Tuple, Dict, BinaryIO
+from typing import List, Tuple, Dict
 from load.db_connector import get_neo4j_driver
-from load.cypher_withregion import create_query 
+from load.cypher_withregion import create_query
 import asyncio
 import aiofiles
 import uuid
 
+# 假设 main.py 中的 ConnectionManager 类在这里可以被访问
+# 更好的做法是定义一个基类或直接传递 websocket 对象，但为了简单，我们直接传递 manager 和 client_id
+# from main import manager # 避免循环导入，直接通过参数传递
+
+# --- 将同步函数包装成异步 ---
+async def run_in_thread(func, *args, **kwargs):
+    return await asyncio.to_thread(func, *args, **kwargs)
 
 def get_file_size(file_path: str) -> float:
     """获取文件的大小（MB）。"""
@@ -22,47 +30,47 @@ def get_file_size(file_path: str) -> float:
 def extract_namespaces(file_path: str) -> Dict[str, str]:
     """解析 XML 文件以提取命名空间。"""
     with open(file_path, 'rb') as f:
+        # iterparse 可以在不加载整个文件到内存的情况下工作
         for event, element in etree.iterparse(f, events=('start',)):
             return element.nsmap
     return {}
 
 def extract_region(path: str) -> str:
     """从文件路径中提取区域信息。"""
-    pattern = re.compile(r"/(\d+[\u4e00-\u9fa5]+)/") # 匹配数字和中文字符
+    # 这个正则表达式可能需要根据你的文件名格式进行调整
+    # 例如，如果文件名为 "510100成都市_Building.gml"，这个正则可以工作
+    pattern = re.compile(r"(\d+[\u4e00-\u9fa5]+)") 
     match = pattern.search(path)
     if match:
         return match.group(1)
-    return "UnknownRegion" # 如果未找到，返回默认值
+    return "UnknownRegion"
 
-def split_gml_file(input_file_path: str) -> List[str]:
-    """
-    将大GML文件分割成小块并保存，返回分割后的文件路径列表。
-    """
+def _split_gml_file_sync(input_file_path: str, namespaces: Dict, original_filename: str) -> List[str]:
+    """同步分割文件的核心逻辑"""
     tree = etree.parse(input_file_path)
     root = tree.getroot()
-    namespaces = extract_namespaces(input_file_path)
-
-    boundedBy_elements = root.xpath("//gml:boundedBy", namespaces=namespaces)
     cityObMember_elements = root.xpath("//core:cityObjectMember", namespaces=namespaces)
     
-    batch_size = math.ceil(len(cityObMember_elements) / 10) if len(cityObMember_elements) > 0 else 1
-    total_batches = (len(cityObMember_elements) + batch_size - 1) // batch_size if len(cityObMember_elements) > 0 else 0
+    if not cityObMember_elements:
+        return [input_file_path] # 如果没有 cityObjectMember，则不分割
 
-    base_path = input_file_path.rsplit('.', 1)[0]
+    batch_size = math.ceil(len(cityObMember_elements) / 10)
+    total_batches = (len(cityObMember_elements) + batch_size - 1) // batch_size
+    
+    # 使用原始文件名的前缀，避免临时文件名影响输出
+    base_name = os.path.splitext(original_filename)[0]
+    output_dir = os.path.dirname(input_file_path)
     output_files_path = []
 
-    if total_batches == 0:
-        output_files_path.append(input_file_path)
-        return output_files_path
+    boundedBy_elements = root.xpath("//gml:boundedBy", namespaces=namespaces)
 
     for batch_idx in range(total_batches):
         start_idx = batch_idx * batch_size
         end_idx = min(start_idx + batch_size, len(cityObMember_elements))
-        output_file = f"{base_path}_part{batch_idx + 1}.gml"
+        output_file = os.path.join(output_dir, f"{base_name}_part{batch_idx + 1}.gml")
 
         with open(output_file, "wb") as f:
             f.write(b'<?xml version="1.0" encoding="utf-8"?>\n')
-
             city_model_start = f'<core:CityModel{" "}'
             for prefix, uri in namespaces.items():
                 city_model_start += f'xmlns:{prefix}="{uri}" '
@@ -70,121 +78,119 @@ def split_gml_file(input_file_path: str) -> List[str]:
             f.write(city_model_start.encode('utf-8'))
 
             for boundedBy in boundedBy_elements:
-                boundedBy_content = etree.tostring(boundedBy, pretty_print=True, encoding='utf-8')
-                f.write(boundedBy_content)
-
+                f.write(etree.tostring(boundedBy, pretty_print=True, encoding='utf-8'))
+            
             for cityObMember in cityObMember_elements[start_idx:end_idx]:
-                cityObMember_content = etree.tostring(cityObMember, pretty_print=True, encoding='utf-8')
-                f.write(cityObMember_content)
+                f.write(etree.tostring(cityObMember, pretty_print=True, encoding='utf-8'))
 
             f.write(b'</core:CityModel>\n')
             output_files_path.append(output_file)
     return output_files_path
 
 
-async def import_gml_file_to_neo4j(file_path: str, dbname: str, messages: List[str]) -> bool:
+async def import_gml_file_to_neo4j(file_path: str, dbname: str, original_filename: str, manager, client_id: str) -> bool:
     """
-    实际将 GML 文件（或其分割部分）导入 Neo4j 的核心逻辑。
-    messages: 用于收集日志消息。
+    将 GML 文件导入 Neo4j 的核心逻辑，并通过 WebSocket 发送进度。
     """
-    gml_size = get_file_size(file_path)
-    # 重新引入 region 提取，因为 create_query 期望这个参数
-    gml_region = extract_region(file_path) 
+    gml_region = extract_region(original_filename) # 从原始文件名提取区域信息
+    file_display_name = os.path.basename(original_filename)
 
     driver = get_neo4j_driver()
     if not driver:
-        messages.append("错误：数据库未连接。请先连接。")
+        await manager.send_personal_message("Error: Database driver has not been initialized. Please connect first.", client_id)
         return False
 
-    success = False
-    file_display_name = os.path.basename(file_path)
+    # 使用 run_in_thread 执行同步 IO 操作
+    gml_size = await run_in_thread(get_file_size, file_path)
+    namespaces = await run_in_thread(extract_namespaces, file_path)
 
-    if gml_size <= 300: # 分割阈值，例如 300 MB
-        messages.append(f"正在导入文件: {file_display_name} (大小: {gml_size:.2f}MB)")
+    success = False
+    
+    # 辅助函数，用于执行数据库查询
+    async def execute_db_query(path, display_name):
         start_time = time.time()
         try:
-            # 直接使用导入的 create_query
-            records, summary, keys = driver.execute_query(
+            absolute_path = os.path.abspath(path)       
+            uri_compatible_path = absolute_path.replace('\\', '/')
+            
+            # 数据库查询是阻塞的，也放入线程池
+            await run_in_thread(
+                driver.execute_query,
                 create_query,
-                file_path="file:///" + file_path, # Neo4j LOAD CSV 的路径格式
+                # 使用修正后的URI
+                file_path="/" + uri_compatible_path,
                 database_=dbname,
-                region=gml_region # 重新传入 region 参数
+                region=gml_region
             )
-            end_time = time.time()
-            single_time = end_time - start_time
-            messages.append(f"文件导入成功: {file_display_name}, 用时: {single_time:.3f}s")
-            success = True
+            single_time = time.time() - start_time
+            await manager.send_personal_message(f"Import successfully:{display_name}, time taken: {single_time:.3f}s", client_id)
+            return True
         except Exception as query_e:
-            messages.append(f"文件导入失败 {file_display_name}: {query_e}")
-            success = False
+            await manager.send_personal_message(f"Import failed: {display_name}: {query_e}", client_id)
+            return False
+
+    if gml_size <= 300:
+        await manager.send_personal_message(f"File is being imported: {file_display_name} (Size: {gml_size:.2f}MB)", client_id)
+        success = await execute_db_query(file_path, file_display_name)
     else:
-        messages.append(f'文件 {file_display_name} 过大 ({gml_size:.2f}MB)，将进行分割并分批导入。')
-        split_paths = split_gml_file(file_path)
-        messages.append(f"文件 '{file_display_name}' 已被分割成 {len(split_paths)} 个部分。")
+        await manager.send_personal_message(f'File: {file_display_name} is ({gml_size:.2f}MB), and it will be divided and imported in batches.', client_id)
         
-        total_batch_time = 0.0
+        # 分割文件是CPU和IO密集型操作，放入线程池
+        split_paths = await run_in_thread(_split_gml_file_sync, file_path, namespaces, original_filename)
+        await manager.send_personal_message(f"File: '{file_display_name}' has been divided into {len(split_paths)} batcdhes.", client_id)
+        
         batch_success = True
         for idx, part_gml_path in enumerate(split_paths):
-            messages.append(f"正在导入分割文件 {idx + 1}/{len(split_paths)}: {os.path.basename(part_gml_path)}")
-            start_time = time.time()
-            try:
-                # 直接使用导入的 create_query
-                records, summary, keys = driver.execute_query(
-                    create_query,
-                    file_path="file:///" + part_gml_path,
-                    database_=dbname,
-                    region=gml_region # 重新传入 region 参数
-                )
-                end_time = time.time()
-                single_time = end_time - start_time
-                messages.append(f"分割文件导入成功: {os.path.basename(part_gml_path)}, 用时: {single_time:.3f}s")
-                total_batch_time += single_time
-            except Exception as query_e:
-                messages.append(f"分割文件导入失败 {os.path.basename(part_gml_path)}: {query_e}")
+            part_display_name = os.path.basename(part_gml_path)
+            await manager.send_personal_message(f"Batch {idx + 1}/{len(split_paths)}: {part_display_name} is being processed.", client_id)
+            if not await execute_db_query(part_gml_path, part_display_name):
                 batch_success = False
-        
+
         if batch_success:
-            messages.append(f"所有分割文件导入完毕。总用时: {total_batch_time:.3f}s")
+            await manager.send_personal_message(f"All the batches have been imported successfully.", client_id)
             success = True
         else:
-            messages.append("部分或全部分割文件导入失败。")
+            await manager.send_personal_message("Partial or complete batches import failed.", client_id)
             success = False
+    
     return success
 
-async def process_uploaded_gml_file(original_filename: str, file_content: bytes, dbname: str) -> Tuple[List[str], bool]:  
-    messages = []
-    overall_success = True
+async def process_uploaded_gml_file(original_filename: str, file_content: bytes, dbname: str, manager, client_id: str):
     temp_dir = "temp_uploaded_gml"
-
     os.makedirs(temp_dir, exist_ok=True)
-
+    
+    # 创建一个唯一的临时文件名来避免冲突
     temp_file_name = f"uploaded_{uuid.uuid4()}_{original_filename}"
     temp_file_path = os.path.join(temp_dir, temp_file_name)
     
-    messages.append(f"已接收文件: {original_filename}")
+    all_temp_files = [temp_file_path] # 记录所有生成的临时文件以便清理
 
     try:
         async with aiofiles.open(temp_file_path, 'wb') as out_file:
             await out_file.write(file_content)
         
-        messages.append(f"文件 '{original_filename}' 已保存到临时路径: {temp_file_path}")
+        await manager.send_personal_message(f"File: '{original_filename}' has been saved to the server, start processing.", client_id)
         
-        success_this_file = await import_gml_file_to_neo4j(temp_file_path, dbname, messages)
-        if not success_this_file:
-            overall_success = False
+        # 调用核心导入逻辑
+        await import_gml_file_to_neo4j(temp_file_path, dbname, original_filename, manager, client_id)
+        
+        # 收集分割后产生的文件
+        base_name = os.path.splitext(original_filename)[0]
+        for item in os.listdir(temp_dir):
+            if item.startswith(f"{base_name}_part") and item.endswith(".gml"):
+                 all_temp_files.append(os.path.join(temp_dir, item))
+
     except Exception as e:
-        messages.append(f"处理文件 '{original_filename}' 过程中发生错误: {e}")
-        overall_success = False
+        await manager.send_personal_message(f"Processing file: '{original_filename}' occurs with serious error: {e}", client_id)
     finally:
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
-            messages.append(f"临时文件 {os.path.basename(temp_file_path)} (原文件: '{original_filename}') 已清理。")
-
-    try:
-        if os.path.exists(temp_dir) and not os.listdir(temp_dir):
-            os.rmdir(temp_dir)
-            messages.append(f"临时目录 '{temp_dir}' 已移除。")
-    except OSError as e:
-        messages.append(f"警告：无法移除临时目录 '{temp_dir}': {e}")
-
-    return messages, overall_success
+        # 清理所有临时文件
+        for f_path in all_temp_files:
+            if os.path.exists(f_path):
+                os.remove(f_path)
+        await manager.send_personal_message(f"File: '{original_filename}' has been processed, and the temporary files have been cleared.", client_id)
+        # 尝试清理空目录
+        try:
+            if not os.listdir(temp_dir):
+                os.rmdir(temp_dir)
+        except OSError:
+            pass # 目录非空则忽略

@@ -30,6 +30,7 @@
         <div class="controls">
             <button class="custom-button" onclick="showConnectModal()">Connect</button>
             <button class="custom-button" onclick="uploadFiles()">Upload file</button>
+            <input type="file" id="gmlFileInput" accept=".gml" style="display: none;" multiple>
         </div>
     </div>
 
@@ -59,6 +60,10 @@
     <script>
         const chatHistory = document.getElementById('chatHistory');
         const userInput = document.getElementById('userInput');
+        const gmlFileInput = document.getElementById('gmlFileInput');
+
+        let socket;
+        let clientId;
 
         // Display the connection modal
         function showConnectModal() {
@@ -105,7 +110,7 @@
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    appendBotMessage(`The database '${dbName}' connects successfully! You can now query or import your files.`);
+                    appendBotMessage(`The database '${dbName}' connects successfully! You can now enter your questions or import gml files.`);
                 } else {
                     appendBotMessage(`Connection failed: ${data.message || 'Unknown error'}`);
                 }
@@ -114,6 +119,99 @@
                 appendBotMessage('Connection request failed, please check your network or backend service.');
             }
         }
+
+        // 生成一个简单的唯一ID
+        function generateUUID() {
+            return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, c =>
+                (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+            );
+        }
+
+
+        // 建立WebSocket连接
+        function connectWebSocket() {
+            clientId = generateUUID();
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${wsProtocol}//${window.location.host}/ws/${clientId}`;
+
+            socket = new WebSocket(wsUrl);
+
+            socket.onopen = function (event) {
+                console.log("WebSocket connection established with client ID:", clientId);
+
+            };
+
+            socket.onmessage = function (event) {
+                const data = JSON.parse(event.data);
+                if (data.type === 'progress') {
+                    appendBotMessage(data.message);
+                }
+            };
+
+            socket.onclose = function (event) {
+                console.log("WebSocket connection closed.");
+            };
+
+            socket.onerror = function (error) {
+                console.error("WebSocket Error:", error);
+                appendBotMessage("与服务器的实时通信连接失败。");
+            };
+        }
+
+        // 点击 "Upload file" 按钮时调用的函数
+        function uploadFiles() {
+            gmlFileInput.click(); // 触发隐藏的文件输入框
+        }
+
+        // 当用户选择了文件后
+        gmlFileInput.addEventListener('change', async function (event) {
+            const files = event.target.files;
+            if (files.length === 0) {
+                return;
+            }
+
+            if (!socket || socket.readyState !== WebSocket.OPEN) {
+                appendBotMessage("错误：与服务器的实时连接已断开，请刷新页面。");
+                return;
+            }
+
+            const formData = new FormData();
+            for (const file of files) {
+                if (file.name.toLowerCase().endsWith('.gml')) {
+                    formData.append('files', file);
+                } else {
+                    appendBotMessage(`文件 "${file.name}" 不是 GML 文件，已跳过。`);
+                }
+            }
+
+            // 如果没有有效文件则不上传
+            if (!formData.has('files')) {
+                return;
+            }
+
+            appendBotMessage(`正在上传 ${formData.getAll('files').length} 个文件...`);
+
+            try {
+                const response = await fetch(`/upload/${clientId}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    appendBotMessage(`上传请求失败: ${result.message || '未知服务器错误'}`);
+                }
+                // 成功的消息由后端通过WebSocket推送，这里不需要额外处理
+
+            } catch (error) {
+                console.error('Upload failed:', error);
+                appendBotMessage('文件上传失败，请检查网络或后端服务。');
+            } finally {
+                // 清空文件输入框的值，这样用户可以再次上传相同的文件
+                gmlFileInput.value = '';
+            }
+        });
 
         // Send chat message
         async function sendMessage() {
@@ -159,7 +257,9 @@
         function appendBotMessage(message) {
             const botDiv = document.createElement('div');
             botDiv.classList.add('bot-message');
-            botDiv.innerHTML = `<span class="sender">Assistant:</span> <span class="text">${message}</span>`;
+            // 将换行符转为 <br> 以便在HTML中正确显示
+            const formattedMessage = message.replace(/\n/g, '<br>');
+            botDiv.innerHTML = `<span class="sender">Assistant:</span> <span class="text">${formattedMessage}</span>`;
             chatHistory.appendChild(botDiv);
             scrollToBottom();
         }
@@ -168,14 +268,17 @@
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
-        window.onload = scrollToBottom;
-
         userInput.addEventListener('keypress', function (event) {
             if (event.key === 'Enter') {
                 event.preventDefault();
                 sendMessage();
             }
         });
+
+        window.onload = function () {
+            scrollToBottom();
+            connectWebSocket();
+        }
     </script>
 
 </body>

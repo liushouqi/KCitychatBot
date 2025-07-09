@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request, Form, UploadFile, File, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -7,8 +7,13 @@ import os
 from openai import OpenAI
 from chatflow import ChatFlow
 from pydantic import BaseModel
-from load.db_connector import connect_test
+from load.db_connector import initialize_driver, close_driver, test_neo4j_connection
 from config import DBConfig
+from typing import List, Dict
+import load.gml_processor as gml_processor
+import asyncio
+from contextlib import asynccontextmanager
+
 
 load_dotenv()
 client = OpenAI(
@@ -23,7 +28,35 @@ class ConnectionDetails(BaseModel):
     dbName: str
     password: str
 
-app = FastAPI() # Pass the lifespan context manager to FastAPI
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 应用启动时执行的代码 (这里不需要)
+    print("Application startup.")
+    yield
+    # 应用关闭时执行的代码
+    print("Application shutdown.")
+    close_driver()
+
+app = FastAPI()
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: Dict[str, WebSocket] = {}
+
+    async def connect(self, websocket: WebSocket, client_id: str):
+        await websocket.accept()
+        self.active_connections[client_id] = websocket
+
+    def disconnect(self, client_id: str):
+        if client_id in self.active_connections:
+            del self.active_connections[client_id]
+
+    async def send_personal_message(self, message: str, client_id: str):
+        if client_id in self.active_connections:
+            websocket = self.active_connections[client_id]
+            await websocket.send_json({"type": "progress", "message": message})
+
+manager = ConnectionManager()
 
 app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
 
@@ -47,14 +80,48 @@ async def connect_database_api(details: ConnectionDetails):
     Handles database connection requests from the frontend, calling connect_test.
     """
     try:
-        connect_test(details.url, details.user, details.password)
+        test_neo4j_connection(details.url, details.user, details.password)
+        initialize_driver(details.url, details.user, details.password)
         # store database information in the backend
         DBConfig.url = details.url
         DBConfig.user = details.user
         DBConfig.password = details.password
         DBConfig.dbName = details.dbName
-
         return JSONResponse(content={'success': True, 'message': 'Connection successful'})
     except Exception as e:
         # Return detailed failure message
         return JSONResponse(content={'success': False, 'message': f'Connection failed: {str(e)}'}, status_code=500)
+
+@app.websocket("/ws/{client_id}")
+async def websocket_endpoint(websocket: WebSocket, client_id: str):
+    await manager.connect(websocket, client_id)
+    try:
+        while True:
+            # 保持连接打开，可以用于双向通信，但这里主要用于后端向前端推送
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(client_id)
+
+
+@app.post("/upload/{client_id}")
+async def upload_gml_files(client_id: str, files: List[UploadFile] = File(...)):
+    if not DBConfig.dbName:
+        await manager.send_personal_message("The database is not connected. Please connect to the database first before uploading files.", client_id)
+        return JSONResponse(status_code=400, content={"message": "Database not connected"})
+
+    # 在后台任务中处理文件，以免阻塞HTTP响应
+    # FastAPI会自动处理这个，直接await即可
+    for file in files:
+        await manager.send_personal_message(f"Start processing the file: {file.filename}", client_id)
+        content = await file.read()
+        # 将 manager 和 client_id 传递给处理函数，以便它可以发送回馈消息
+        asyncio.create_task(
+            gml_processor.process_uploaded_gml_file(
+                original_filename=file.filename,
+                file_content=content,
+                dbname=DBConfig.dbName,
+                manager=manager,
+                client_id=client_id
+            )
+        )
+    return JSONResponse(content={"message": f"The file upload request has been received and is being processed... Please check the progress in the chat box."})

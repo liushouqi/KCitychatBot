@@ -47,6 +47,11 @@ To evaluate system's outputs, run:
 ```
 python evaluation.py
 ```
+## 5.Additional Explanation
+* We have integrated all frontend and backend achievements in `main.py`, but it takes a significant amount of time. Therefore, using the backend approach is more recommended. To constuct your knowledge graphs, try `load/final.py`. To chat with CityGML data, try `crews/chatbot.py`. Remember to change URL, user...  
+* Don't ask questions randomly, you'd better to see some raw data in `data/`, otherwise your questions might be meaningless or refer to something that doesn't exist in the data.  
+* We employ DeepSeeK API, it's cheap but slow. Other LLMs API are also workable. You can change LLM in `crews/input2cypher_crew.py` and `crews/generate_crew.py`.  
+**⭐️ If you find this project helpful, please consider giving it a star! ⭐️**
 
 
 
