@@ -1,0 +1,84 @@
+[
+  {
+    "w": {
+      "identity": 931887971,
+      "labels": [
+        "WaterBody"
+      ],
+      "properties": {
+        "gml:id": "fld_4a27b17d-0127-4265-813f-238562d81fa8",
+        "type": "WaterBody",
+        "region": "3东京都"
+      },
+      "elementId": "4:be6dcfeb-90a4-4ae6-b3aa-1ccc9172af42:931887971"
+    },
+    "details": [
+      {
+        "class_num": "1",
+        "description": "洪水浸水想定区域",
+        "class_name": "WaterBody_function"
+      },
+      {
+        "class_num": "16",
+        "description": "江東内部河川流域",
+        "class_name": "RiverFloodingRiskAttribute_description"
+      },
+      {
+        "class_num": "1",
+        "description": "0.5m未満",
+        "class_name": "RiverFloodingRiskAttribute_rank"
+      },
+      {
+        "class_num": "2",
+        "description": "都道府県",
+        "class_name": "RiverFloodingRiskAttribute_adminType"
+      },
+      {
+        "class_num": "2",
+        "description": "L2（想定最大規模）",
+        "class_name": "RiverFloodingRiskAttribute_scale"
+      }
+    ]
+  },
+  {
+    "w": {
+      "identity": 1387878439,
+      "labels": [
+        "WaterBody"
+      ],
+      "properties": {
+        "gml:id": "fld_4a27b17d-0127-4265-813f-238562d81fa8",
+        "type": "WaterBody",
+        "region": "9江东区"
+      },
+      "elementId": "4:be6dcfeb-90a4-4ae6-b3aa-1ccc9172af42:1387878439"
+    },
+    "details": [
+      {
+        "class_num": "1",
+        "description": "洪水浸水想定区域",
+        "class_name": "WaterBody_function"
+      },
+      {
+        "class_num": "16",
+        "description": "江東内部河川流域",
+        "class_name": "RiverFloodingRiskAttribute_description"
+      },
+      {
+        "class_num": "1",
+        "description": "0.5m未満",
+        "class_name": "RiverFloodingRiskAttribute_rank"
+      },
+      {
+        "class_num": "2",
+        "description": "都道府県",
+        "class_name": "RiverFloodingRiskAttribute_adminType"
+      },
+      {
+        "class_num": "2",
+        "description": "L2（想定最大規模）",
+        "class_name": "RiverFloodingRiskAttribute_scale"
+      }
+    ]
+  }
+]

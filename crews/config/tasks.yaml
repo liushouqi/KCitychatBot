@@ -1,0 +1,68 @@
+extract_task:
+  description: >
+    根据labels_properties.json中提供的实体及属性，并仿照下面的示例解析用户输入的语句，提取出用户意图，节点标签和属性。示例如下：
+    示例1：
+    Input：What is the height and location of the building with gml:id = 'bldg_050fa2a5-b390-44ce-88d5-ae4f83a5a056'?
+    Output：
+    Extract intent: Query height and location of a specific building, 
+    labels: Building, properties: height - `measuredHeight`, location - `LocalityName`, `gml:id`:'bldg_050fa2a5-b390-44ce-88d5-ae4f83a5a056'.
+
+    示例2：
+    Input：What is the average building height in the Fengdao region?
+    Output：
+    Extract intent: Calculate average height of buildings in Fengdao region, 
+    labels: Building, properties: height - `measuredHeight`, `region`:Fengdao.
+
+    示例3：
+    Input：What are the actual classes of the road with gml:id = 'tran_585935ae-aab9-4c7f-9fa2-2b90ceeb0b0f'?
+    Output：
+    Extract intent: Retrieve actual attributes of a specific road, 
+    labels: Road, properties: `gml:id`:'tran_585935ae-aab9-4c7f-9fa2-2b90ceeb0b0f'.
+
+    接下来根据用户输入提取出用户意图，节点标签和属性，用户输入如下：{self.input}
+  expected_output: >
+    Users' intents, node labels and attributes
+
+query_task:
+  description: >
+    根据提取的实体关系，自动生成Cypher查询语句，下面是3个示例。
+    示例1：
+    Input：
+    Extract intent: Query height and location of a specific building, 
+    labels: Building, properties: height - `measuredHeight`, location - `LocalityName`, `gml:id`:'bldg_050fa2a5-b390-44ce-88d5-ae4f83a5a056'.
+    Output：
+    MATCH p=(b:Building)-[*]->(h)
+    WHERE b.`gml:id` = "bldg_050fa2a5-b390-44ce-88d5-ae4f83a5a056" 
+    AND ANY(r IN RELATIONSHIPS(p) WHERE TYPE(r) = 'measuredHeight' OR TYPE(r) = 'LocalityName')
+    RETURN b.`gml:id`,h.`_text`
+
+    示例2：
+    Input：
+    Extract intent: Calculate average height of buildings in Fengdao region, 
+    labels: Building, properties: height - `measuredHeight`, `region`:Fengdao.
+    Output：
+    MATCH p=(b:Building)-[*]->(h)
+    WHERE WHERE b.region=~".*丰岛区" 
+    AND ANY(r IN RELATIONSHIPS(p) WHERE TYPE(r) = 'measuredHeight')
+    RETURN COUNT(b) AS building_count,
+    AVG(toFloat(h.`_text`)) AS aver_height
+
+    示例3：
+    Input：
+    Extract intent: Retrieve actual attributes of a specific road, 
+    labels: Road, properties: `gml:id`:'tran_585935ae-aab9-4c7f-9fa2-2b90ceeb0b0f'.
+    Output：
+    MATCH p=(r:Road)-[*]->(child)
+    WHERE r.`gml:id`= "tran_585935ae-aab9-4c7f-9fa2-2b90ceeb0b0f"
+    AND child.codeSpace IS NOT NULL
+    WITH child, replace(split(child.codeSpace, '/')[3], '.xml', '') AS class_name, child._text AS class_num
+    MATCH q=(n:name)<-[*]-(d:Dictionary)
+    WHERE n.`_text`=class_name
+    MATCH r=(d)-[*]->(num:name)
+    WHERE num.`_text`=class_num
+    MATCH (num)-[*2]-(des:description)
+    RETURN class_name,class_num,des.`_text`
+
+    下面根据提取的实体关系，只生成Cypher语句，实体关系如下：
+  expected_output: >
+    Users' intents, node labels and attributes

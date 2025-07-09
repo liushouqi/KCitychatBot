@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<gml:Dictionary xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:gml="http://www.opengis.net/gml" xsi:schemaLocation="http://www.opengis.net/gml http://schemas.opengis.net/gml/3.1.1/profiles/SimpleDictionary/1.0.0/gmlSimpleDictionaryProfile.xsd" gml:id="cl_1efdc2d9-1317-47fa-a4c9-2ea3146d9fdf">
+<gml:name>BuildingDetailAttribute_vacancy</gml:name>
+<gml:dictionaryEntry>
+<gml:Definition gml:id="BuildingDetailAttribute_vacancy_1">
+<gml:description>空き家</gml:description>
+<gml:name>1</gml:name>
+</gml:Definition>
+</gml:dictionaryEntry>
+<gml:dictionaryEntry>
+<gml:Definition gml:id="BuildingDetailAttribute_vacancy_2">
+<gml:description>空き家以外</gml:description>
+<gml:name>0</gml:name>
+</gml:Definition>
+</gml:dictionaryEntry>
+</gml:Dictionary>

@@ -1,0 +1,228 @@
+﻿label,properties
+CityModel,"[type, xmlns:bldg, xmlns:gml, xmlns:core, xmlns:gen, xsi:schemaLocation, xmlns:xlink, xmlns:app, xmlns:xsi, xmlns:uro, xmlns:xAL, xmlns:sch, xmlns:veg, xmlns:smil20lang, xmlns:brid, xmlns:smil20, xmlns:dem, xmlns:tun, xmlns:luse, xmlns:tran, xmlns:wtr, xmlns:urf, xmlns:tex, xmlns:pbase, xmlns:grp, xmlns:frn]"
+boundedBy,"[type, xmlns:bldg, xmlns:gml, xmlns:core, xmlns:gen, xmlns:xlink, xmlns:app, xmlns:xsi, xmlns:xAL, xmlns:sch, xmlns:veg, xmlns:smil20lang, xmlns:brid, xmlns:smil20, xmlns:dem, xmlns:tun, xmlns:luse, xmlns:tran, xmlns:wtr, xmlns:tex, xmlns:pbase, xmlns:grp, xmlns:frn, xmlns:uro]"
+cityObjectMember,"[type, xmlns:bldg, xmlns:gml, xmlns:core, xmlns:gen, xmlns:xlink, xmlns:app, xmlns:xsi, xmlns:xAL, xmlns:sch, xmlns:veg, xmlns:smil20lang, xmlns:brid, xmlns:smil20, xmlns:dem, xmlns:tun, xmlns:luse, xmlns:tran, xmlns:wtr, xmlns:tex, xmlns:pbase, xmlns:grp, xmlns:frn, xmlns:uro]"
+appearanceMember,[type]
+Envelope,"[type, srsName, srsDimension, region]"
+Building,"[type, region, gml:id]"
+Appearance,"[type, region]"
+lowerCorner,"[type, _text]"
+upperCorner,"[type, _text]"
+creationDate,"[type, _text]"
+stringAttribute,"[type, name]"
+class,"[type, _text, codeSpace]"
+usage,"[type, _text, codeSpace]"
+measuredHeight,"[type, _text, uom]"
+storeysAboveGround,"[type, _text]"
+storeysBelowGround,"[type, _text]"
+lod0RoofEdge,[type]
+lod1Solid,[type]
+lod2Solid,[type]
+address,[type]
+buildingIDAttribute,"[type, xmlns:uro]"
+buildingDetailAttribute,"[type, xmlns:uro]"
+buildingDisasterRiskAttribute,"[type, xmlns:uro]"
+buildingDataQualityAttribute,"[type, xmlns:uro]"
+keyValuePairAttribute,"[type, xmlns:uro]"
+name,"[type, _text]"
+theme,"[type, _text]"
+surfaceDataMember,[type]
+value,"[type, _text]"
+MultiSurface,"[type, srsName, srsDimension, gml:id]"
+Solid,"[type, srsName, srsDimension, gml:id]"
+GroundSurface,"[type, gml:id]"
+RoofSurface,"[type, gml:id]"
+WallSurface,"[type, gml:id]"
+Address,"[type, gml:id]"
+BuildingIDAttribute,[type]
+BuildingDetailAttribute,[type]
+BuildingRiverFloodingRiskAttribute,[type]
+BuildingHighTideRiskAttribute,[type]
+BuildingDataQualityAttribute,[type]
+KeyValuePairAttribute,[type]
+BuildingLandSlideRiskAttribute,[type]
+ParameterizedTexture,[type]
+surfaceMember,"[type, xlink:href]"
+exterior,[type]
+lod2MultiSurface,[type]
+xalAddress,[type]
+buildingID,"[type, _text]"
+prefecture,"[type, _text, codeSpace]"
+city,"[type, _text, codeSpace]"
+buildingRoofEdgeArea,"[type, _text, uom]"
+fireproofStructureType,"[type, _text, codeSpace]"
+urbanPlanType,"[type, _text, codeSpace]"
+areaClassificationType,"[type, _text, codeSpace]"
+districtsAndZonesType,"[type, _text, codeSpace]"
+landUseType,"[type, _text, codeSpace]"
+detailedUsage,"[type, _text, codeSpace]"
+specifiedBuildingCoverageRate,"[type, _text]"
+specifiedFloorAreaRate,"[type, _text]"
+surveyYear,"[type, _text]"
+description,"[type, _text, codeSpace]"
+rank,"[type, _text, codeSpace]"
+depth,"[type, _text, uom]"
+adminType,"[type, _text, codeSpace]"
+scale,"[type, _text, codeSpace]"
+duration,"[type, _text, uom]"
+srcScale,"[type, _text, codeSpace]"
+geometrySrcDesc,"[type, _text, codeSpace]"
+thematicSrcDesc,"[type, _text, codeSpace]"
+appearanceSrcDesc,"[type, _text, codeSpace]"
+lod1HeightType,"[type, _text, codeSpace]"
+lodType,"[type, _text, codeSpace]"
+key,"[type, _text, codeSpace]"
+codeValue,"[type, _text, codeSpace]"
+areaType,"[type, _text, codeSpace]"
+imageURI,"[type, _text]"
+mimeType,"[type, _text]"
+target,"[type, uri, _text]"
+Polygon,"[type, gml:id, srsName, srsDimension]"
+CompositeSurface,"[type, gml:id]"
+AddressDetails,[type]
+TexCoordList,[type]
+Country,[type]
+interior,[type]
+textureCoordinates,"[type, _text, ring]"
+LinearRing,"[type, gml:id]"
+CountryName,"[type, _text]"
+Locality,[type]
+posList,"[type, _text]"
+LocalityName,"[type, _text, Type]"
+bldgRealEstateIDAttribute,[type]
+RealEstateIDAttribute,[type]
+realEstateIDOfBuilding,"[type, _text]"
+numberOfRealEstateIDOfLand,"[type, _text]"
+realEstateIDOfLand,"[type, _text]"
+matchingScore,"[type, _text]"
+numberOfBuildingUnitOwnership,"[type, _text]"
+realEstateIDOfBuildingUnitOwnership,"[type, _text]"
+outerBuildingInstallation,[type]
+BuildingInstallation,"[type, gml:id]"
+lod2Geometry,[type]
+X3DMaterial,[type]
+diffuseColor,"[type, _text]"
+shininess,"[type, _text]"
+specularColor,"[type, _text]"
+Bridge,"[type, region, gml:id]"
+function,"[type, _text, codeSpace]"
+outerBridgeConstruction,[type]
+bridDataQualityAttribute,[type]
+BridgeConstructionElement,"[type, gml:id]"
+OuterCeilingSurface,"[type, gml:id]"
+OuterFloorSurface,"[type, gml:id]"
+ConstructionDataQualityAttribute,[type]
+dataAcquisition,"[type, _text]"
+ReliefFeature,"[type, region, gml:id]"
+lod,"[type, _text]"
+reliefComponent,[type]
+TINRelief,"[type, gml:id]"
+tin,[type]
+TriangulatedSurface,[type]
+trianglePatches,[type]
+Triangle,[type]
+WaterBody,"[type, region, gml:id]"
+lod1MultiSurface,[type]
+floodingRiskAttribute,[type]
+WaterBodyRiverFloodingRiskAttribute,[type]
+CityFurniture,"[type, region, gml:id]"
+lod3Geometry,[type]
+cityFurnitureDataQualityAttribute,[type]
+CityFurnitureDataQualityAttribute,[type]
+WaterBodyHighTideRiskAttribute,[type]
+SedimentDisasterProneArea,"[type, region, gml:id]"
+validFrom,"[type, _text]"
+location,"[type, _text]"
+disasterType,"[type, _text, codeSpace]"
+zoneNumber,"[type, _text]"
+zoneName,"[type, _text]"
+status,"[type, _text, codeSpace]"
+LandUse,"[type, region, gml:id]"
+landUseDetailAttribute,[type]
+LandUseDetailAttribute,[type]
+orgLandUse,"[type, _text, codeSpace]"
+nominalArea,"[type, _text, uom]"
+areaInSquareMeter,"[type, _text, uom]"
+areaInHa,"[type, _text, uom]"
+Road,"[type, region, gml:id]"
+tranDataQualityAttribute,[type]
+roadStructureAttribute,[type]
+trafficArea,[type]
+auxiliaryTrafficArea,[type]
+TransportationDataQualityAttribute,[type]
+RoadStructureAttribute,[type]
+TrafficArea,"[type, gml:id]"
+AuxiliaryTrafficArea,"[type, gml:id]"
+sectionType,"[type, _text, codeSpace]"
+lod3MultiSurface,[type]
+FirePreventionDistrict,"[type, region, gml:id]"
+HeightControlDistrict,"[type, region, gml:id]"
+UseDistrict,"[type, region, gml:id]"
+validFromType,"[type, _text, codeSpace]"
+custodian,"[type, _text]"
+notificationNumber,"[type, _text]"
+finalNotificationDate,"[type, _text]"
+finalNotificationNumber,"[type, _text]"
+minimumBuildingHeight,"[type, _text, uom]"
+floorAreaRate,"[type, _text]"
+buildingCoverageRate,"[type, _text]"
+buildingHeightLimits,"[type, _text, uom]"
+maximumBuildingHeight,"[type, _text, uom]"
+minimumSiteArea,"[type, _text, uom]"
+photoScale,"[type, _text]"
+lod1Geometry,[type]
+UndergroundBuilding,"[type, region, gml:id]"
+CityObjectGroup,"[type, region, gml:id]"
+lod4Solid,[type]
+interiorRoom,[type]
+groupMember,"[type, xlink:href]"
+parent,"[type, xlink:href]"
+ClosureSurface,"[type, gml:id]"
+Room,"[type, gml:id]"
+lod4MultiSurface,[type]
+roomInstallation,[type]
+FloorSurface,"[type, gml:id]"
+CeilingSurface,"[type, gml:id]"
+InteriorWallSurface,"[type, gml:id]"
+IntBuildingInstallation,"[type, gml:id]"
+opening,[type]
+lod4Geometry,[type]
+Door,"[type, gml:id]"
+Window,"[type, gml:id]"
+OrientableSurface,"[type, orientation]"
+baseSurface,"[type, xlink:href]"
+PlantCover,"[type, region, gml:id]"
+SolitaryVegetationObject,"[type, region, gml:id]"
+vegetationDataQualityAttribute,[type]
+lod1MultiSolid,[type]
+VegetationDataQualityAttribute,[type]
+MultiSolid,"[type, srsName, srsDimension]"
+solidMember,[type]
+interiorBuildingInstallation,[type]
+note,"[type, _text]"
+lod3Solid,[type]
+ifcBuildingStoreyAttribute,[type]
+IfcBuildingStorey,[type]
+globalId,"[type, _text]"
+elevation,"[type, _text, uom]"
+outerBridgeInstallation,[type]
+BridgeInstallation,"[type, gml:id]"
+isFront,"[type, _text]"
+averageHeight,"[type, _text, uom]"
+height,"[type, _text, uom]"
+bridStructureAttribute,[type]
+BridgeStructureAttribute,[type]
+material,"[type, _text, codeSpace]"
+bridgeType,"[type, _text, codeSpace]"
+length,"[type, _text, uom]"
+width,"[type, _text, uom]"
+trafficVolumeAttribute,[type]
+TrafficVolumeAttribute,[type]
+Tunnel,"[type, region, gml:id]"
+outerTunnelInstallation,[type]
+TunnelInstallation,"[type, gml:id]"
+wallSetbackDistance,"[type, _text]"
+ProductiveGreenZone,"[type, region, gml:id]"
+Dictionary,"[type, xmlns:gml, xsi:schemaLocation, xmlns:xsi, gml:id]"
+dictionaryEntry,[type]
+Definition,"[type, gml:id]"

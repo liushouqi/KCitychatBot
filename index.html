@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>KCitychatBot</title>
+    <link rel="stylesheet" href="/frontend/styles.css" />
+</head>
+
+<body>
+
+    <div class="chat-container">
+        <div class="chat-history" id="chatHistory">
+            <div class="system-info">
+                <p>KCitychatBot: a knowledge graph-based chatbot system</p>
+            </div>
+            {% for message in chat_history %}
+            <div class="{{ 'user-message' if message.role == 'user' else 'bot-message' }}">
+                <span class="sender">{{ 'User:' if message.role == 'user' else 'Assistant:' }}</span>
+                <span class="text">{{ message.content }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="chat-input">
+            <input type="text" id="userInput" placeholder="Please input your questions..." />
+            <button onclick="sendMessage()">Send</button>
+        </div>
+
+        <div class="controls">
+            <button class="custom-button" onclick="showConnectModal()">Connect</button>
+            <button class="custom-button" onclick="uploadFiles()">Upload file</button>
+        </div>
+    </div>
+
+    <div id="connectModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeConnectModal()">&times;</span>
+            <h3>Database Connection</h3>
+            <label>URL:</label>
+            <input type="text" id="dbUrl" placeholder="Enter your URL">
+
+            <label>User:</label>
+            <input type="text" id="dbUser" placeholder="Enter user name">
+
+            <label>Database Name:</label>
+            <input type="text" id="dbName" placeholder="Enter database name">
+
+            <label>Password:</label>
+            <input type="password" id="dbPassword" placeholder="Enter your database password">
+
+            <div class="modal-buttons">
+                <button class="ok-btn" onclick="connectDatabase()">OK</button>
+                <button class="cancel-btn" onclick="clearConnectModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const chatHistory = document.getElementById('chatHistory');
+        const userInput = document.getElementById('userInput');
+
+        // Display the connection modal
+        function showConnectModal() {
+            document.getElementById('connectModal').style.display = 'block';
+        }
+
+        // Close the connection modal
+        function closeConnectModal() {
+            document.getElementById('connectModal').style.display = 'none';
+        }
+
+        // Clear input fields in the connection modal
+        function clearConnectModal() {
+            document.getElementById('dbUrl').value = '';
+            document.getElementById('dbUser').value = '';
+            document.getElementById('dbName').value = '';
+            document.getElementById('dbPassword').value = '';
+        }
+
+        // Connect to the database (sends request to backend)
+        async function connectDatabase() {
+            showConnectModal(); // Ensure modal is visible when values are read (though it's about to close)
+            const url = document.getElementById('dbUrl').value;
+            const user = document.getElementById('dbUser').value;
+            const dbName = document.getElementById('dbName').value;
+            const password = document.getElementById('dbPassword').value;
+
+            if (!url || !user || !dbName || !password) {
+                alert('Please fill in all fields.');
+                return;
+            }
+
+            closeConnectModal(); // Close the modal before sending request
+
+            try {
+                const response = await fetch('/connect_database', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url, user, dbName, password }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    appendBotMessage(`The database '${dbName}' connects successfully! You can now query or import your files.`);
+                } else {
+                    appendBotMessage(`Connection failed: ${data.message || 'Unknown error'}`);
+                }
+            } catch (error) {
+                console.error('Connection request failed:', error);
+                appendBotMessage('Connection request failed, please check your network or backend service.');
+            }
+        }
+
+        // Send chat message
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (message) {
+                appendUserMessage(message);
+                userInput.value = '';
+                scrollToBottom();
+
+                try {
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `user_input=${encodeURIComponent(message)}`,
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        const botResponse = data.response;
+                        appendBotMessage(botResponse);
+                    } else {
+                        throw new Error('Server error');
+                    }
+                } catch (error) {
+                    console.error('Failed to send message:', error);
+                    appendBotMessage('Failed to send message, please try again later.');
+                }
+            }
+        }
+
+        // Helper function to append user messages to chat history
+        function appendUserMessage(message) {
+            const userDiv = document.createElement('div');
+            userDiv.classList.add('user-message');
+            userDiv.innerHTML = `<span class="sender">User:</span> <span class="text">${message}</span>`;
+            chatHistory.appendChild(userDiv);
+            scrollToBottom();
+        }
+
+        // Helper function to append bot messages to chat history
+        function appendBotMessage(message) {
+            const botDiv = document.createElement('div');
+            botDiv.classList.add('bot-message');
+            botDiv.innerHTML = `<span class="sender">Assistant:</span> <span class="text">${message}</span>`;
+            chatHistory.appendChild(botDiv);
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        window.onload = scrollToBottom;
+
+        userInput.addEventListener('keypress', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+    </script>
+
+</body>
+
+</html>
